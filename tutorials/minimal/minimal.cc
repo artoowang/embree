@@ -13,6 +13,9 @@
 #  include <windows.h>
 #endif
 
+#include <xmmintrin.h>
+#include <pmmintrin.h>
+
 /*
  * A minimal tutorial. 
  *
@@ -33,21 +36,6 @@
  *
  * You should be able to compile this using a C or C++ compiler.
  */
-
-// TODO: Should we do the following from the readme.pdf?
-//#include <xmmintrin.h>
-//#include <pmmintrin.h>
-//...
-//_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-//_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-
-/* 
- * This is only required to make the tutorial compile even when
- * a custom namespace is set.
- */
-//#if defined(RTC_NAMESPACE_OPEN)
-//RTC_NAMESPACE_OPEN
-//#endif
 
 // Copied from readme.pdf.
 struct Vertex { float x, y, z, a; };
@@ -165,74 +153,23 @@ void castRay(RTCScene scene,
   }
   else
     printf("Did not find any intersection.\n");
-
-  ///*
-  // * The intersect context can be used to set intersection
-  // * filters or flags, and it also contains the instance ID stack
-  // * used in multi-level instancing.
-  // */
-  //struct RTCIntersectContext context;
-  //rtcInitIntersectContext(&context);
-
-  ///*
-  // * The ray hit structure holds both the ray and the hit.
-  // * The user must initialize it properly -- see API documentation
-  // * for rtcIntersect1() for details.
-  // */
-  //struct RTCRayHit rayhit;
-  //rayhit.ray.org_x = ox;
-  //rayhit.ray.org_y = oy;
-  //rayhit.ray.org_z = oz;
-  //rayhit.ray.dir_x = dx;
-  //rayhit.ray.dir_y = dy;
-  //rayhit.ray.dir_z = dz;
-  //rayhit.ray.tnear = 0;
-  //rayhit.ray.tfar = std::numeric_limits<float>::infinity();
-  //rayhit.ray.mask = -1;
-  //rayhit.ray.flags = 0;
-  //rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-  //rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
-
-  ///*
-  // * There are multiple variants of rtcIntersect. This one
-  // * intersects a single ray with the scene.
-  // */
-  //rtcIntersect1(scene, &context, &rayhit);
-
-  //printf("%f, %f, %f: ", ox, oy, oz);
-  //if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
-  //{
-  //  /* Note how geomID and primID identify the geometry we just hit.
-  //   * We could use them here to interpolate geometry information,
-  //   * compute shading, etc.
-  //   * Since there is only a single triangle in this scene, we will
-  //   * get geomID=0 / primID=0 for all hits.
-  //   * There is also instID, used for instancing. See
-  //   * the instancing tutorials for more information */
-  //  printf("Found intersection on geometry %d, primitive %d at tfar=%f\n", 
-  //         rayhit.hit.geomID,
-  //         rayhit.hit.primID,
-  //         rayhit.ray.tfar);
-  //}
-  //else
-  //  printf("Did not find any intersection.\n");
 }
 
 void waitForKeyPressedUnderWindows()
 {
 #if defined(_WIN32)
   HANDLE hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-  
+
   CONSOLE_SCREEN_BUFFER_INFO csbi;
   if (!GetConsoleScreenBufferInfo(hStdOutput, &csbi)) {
     printf("GetConsoleScreenBufferInfo failed: %d\n", GetLastError());
     return;
   }
-  
+
   /* do not pause when running on a shell */
   if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0)
     return;
-  
+
   /* only pause if running in separate console window. */
   printf("\n\tPress any key to exit...\n");
   int ch = getch();
@@ -244,6 +181,9 @@ void waitForKeyPressedUnderWindows()
 
 int main()
 {
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
   /* Initialization. All of this may fail, but we will be notified by
    * our errorFunction. */
   RTCDevice device = initializeDevice();
@@ -259,9 +199,9 @@ int main()
    * always make sure to release resources allocated through Embree. */
   rtcDeleteScene(scene);
   rtcDeleteDevice(device);
-  
+
   /* wait for user input under Windows when opened in separate window */
   waitForKeyPressedUnderWindows();
-  
+
   return 0;
 }
