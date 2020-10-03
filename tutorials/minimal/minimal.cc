@@ -134,7 +134,7 @@ RTCScene initializeScene(RTCDevice device) {
  * Cast a single ray with origin (ox, oy, oz) and direction
  * (dx, dy, dz).
  */
-void castRay(RTCScene scene, float ox, float oy, float oz, float dx, float dy,
+bool CastRay(RTCScene scene, float ox, float oy, float oz, float dx, float dy,
              float dz) {
   RTCRay ray;
   ray.org[0] = ox;
@@ -152,19 +152,21 @@ void castRay(RTCScene scene, float ox, float oy, float oz, float dx, float dy,
   ray.time = 0.0f;
   rtcIntersect(scene, ray);
 
-  printf("%f, %f, %f: ", ox, oy, oz);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
-    /* Note how geomID and primID identify the geometry we just hit.
-     * We could use them here to interpolate geometry information,
-     * compute shading, etc.
-     * Since there is only a single triangle in this scene, we will
-     * get geomID=0 / primID=0 for all hits.
-     * There is also instID, used for instancing. See
-     * the instancing tutorials for more information */
-    printf("Found intersection on geometry %d, primitive %d at tfar=%f\n",
-           ray.geomID, ray.primID, ray.tfar);
-  } else
-    printf("Did not find any intersection.\n");
+  return ray.geomID != RTC_INVALID_GEOMETRY_ID;
+
+  // printf("%f, %f, %f: ", ox, oy, oz);
+  // if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
+  //  /* Note how geomID and primID identify the geometry we just hit.
+  //   * We could use them here to interpolate geometry information,
+  //   * compute shading, etc.
+  //   * Since there is only a single triangle in this scene, we will
+  //   * get geomID=0 / primID=0 for all hits.
+  //   * There is also instID, used for instancing. See
+  //   * the instancing tutorials for more information */
+  //  printf("Found intersection on geometry %d, primitive %d at tfar=%f\n",
+  //         ray.geomID, ray.primID, ray.tfar);
+  //} else
+  //  printf("Did not find any intersection.\n");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -187,12 +189,6 @@ int main(int argc, char** argv) {
   RTCDevice device = initializeDevice();
   RTCScene scene = initializeScene(device);
 
-  /* This will hit the triangle at t=1. */
-  castRay(scene, 0, 0, -1, 0, 0, 1);
-
-  /* This will not hit anything. */
-  castRay(scene, 1, 1, -1, 0, 0, 1);
-
   glfwSetErrorCallback(GlfwErrorFunc);
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
@@ -214,10 +210,15 @@ int main(int argc, char** argv) {
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
-    uint8_t c = static_cast<uint8_t>(++frame % 255);
+    uint8_t c = static_cast<uint8_t>(++frame % 128) + 128;
     for (int y = 0; y < height; ++y) {
       for (int x = 0; x < width; ++x) {
-        pixels[4 * (y * width + x)] = c;
+        if (CastRay(scene, -0.1f + 1.2f * x / (width - 1),
+                    -0.1f + 1.2f * y / (height - 1), -1.f, 0.f, 0.f, 1.f)) {
+          pixels[4 * (y * width + x)] = c;
+        } else {
+          pixels[4 * (y * width + x)] = 0;
+        }
         pixels[4 * (y * width + x) + 1] = 0;
         pixels[4 * (y * width + x) + 2] = 0;
         pixels[4 * (y * width + x) + 3] = 255;
