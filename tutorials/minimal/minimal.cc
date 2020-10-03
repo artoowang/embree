@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <embree2/rtcore.h>
+#include <embree2/rtcore_ray.h>
 #include <stdio.h>
 #include <math.h>
 #include <limits>
@@ -123,86 +124,120 @@ RTCScene initializeScene(RTCDevice device)
   return scene;
 }
 
-///*
-// * Cast a single ray with origin (ox, oy, oz) and direction
-// * (dx, dy, dz).
-// */
-//void castRay(RTCScene scene, 
-//             float ox, float oy, float oz,
-//             float dx, float dy, float dz)
-//{
-//  /*
-//   * The intersect context can be used to set intersection
-//   * filters or flags, and it also contains the instance ID stack
-//   * used in multi-level instancing.
-//   */
-//  struct RTCIntersectContext context;
-//  rtcInitIntersectContext(&context);
-//
-//  /*
-//   * The ray hit structure holds both the ray and the hit.
-//   * The user must initialize it properly -- see API documentation
-//   * for rtcIntersect1() for details.
-//   */
-//  struct RTCRayHit rayhit;
-//  rayhit.ray.org_x = ox;
-//  rayhit.ray.org_y = oy;
-//  rayhit.ray.org_z = oz;
-//  rayhit.ray.dir_x = dx;
-//  rayhit.ray.dir_y = dy;
-//  rayhit.ray.dir_z = dz;
-//  rayhit.ray.tnear = 0;
-//  rayhit.ray.tfar = std::numeric_limits<float>::infinity();
-//  rayhit.ray.mask = -1;
-//  rayhit.ray.flags = 0;
-//  rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-//  rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
-//
-//  /*
-//   * There are multiple variants of rtcIntersect. This one
-//   * intersects a single ray with the scene.
-//   */
-//  rtcIntersect1(scene, &context, &rayhit);
-//
-//  printf("%f, %f, %f: ", ox, oy, oz);
-//  if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
-//  {
-//    /* Note how geomID and primID identify the geometry we just hit.
-//     * We could use them here to interpolate geometry information,
-//     * compute shading, etc.
-//     * Since there is only a single triangle in this scene, we will
-//     * get geomID=0 / primID=0 for all hits.
-//     * There is also instID, used for instancing. See
-//     * the instancing tutorials for more information */
-//    printf("Found intersection on geometry %d, primitive %d at tfar=%f\n", 
-//           rayhit.hit.geomID,
-//           rayhit.hit.primID,
-//           rayhit.ray.tfar);
-//  }
-//  else
-//    printf("Did not find any intersection.\n");
-//}
-//
-//void waitForKeyPressedUnderWindows()
-//{
-//#if defined(_WIN32)
-//  HANDLE hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-//  
-//  CONSOLE_SCREEN_BUFFER_INFO csbi;
-//  if (!GetConsoleScreenBufferInfo(hStdOutput, &csbi)) {
-//    printf("GetConsoleScreenBufferInfo failed: %d\n", GetLastError());
-//    return;
-//  }
-//  
-//  /* do not pause when running on a shell */
-//  if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0)
-//    return;
-//  
-//  /* only pause if running in separate console window. */
-//  printf("\n\tPress any key to exit...\n");
-//  int ch = getch();
-//#endif
-//}
+/*
+ * Cast a single ray with origin (ox, oy, oz) and direction
+ * (dx, dy, dz).
+ */
+void castRay(RTCScene scene, 
+             float ox, float oy, float oz,
+             float dx, float dy, float dz)
+{
+  RTCRay ray;
+  ray.org[0] = ox;
+  ray.org[1] = oy;
+  ray.org[2] = oz;
+  ray.dir[0] = dx;
+  ray.dir[1] = dy;
+  ray.dir[2] = dz;
+  ray.tnear = 0.0f;
+  ray.tfar = std::numeric_limits<float>::infinity();
+  ray.instID = RTC_INVALID_GEOMETRY_ID;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = 0xFFFFFFFF;
+  ray.time = 0.0f;
+  rtcIntersect(scene, ray);
+
+  printf("%f, %f, %f: ", ox, oy, oz);
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+  {
+    /* Note how geomID and primID identify the geometry we just hit.
+     * We could use them here to interpolate geometry information,
+     * compute shading, etc.
+     * Since there is only a single triangle in this scene, we will
+     * get geomID=0 / primID=0 for all hits.
+     * There is also instID, used for instancing. See
+     * the instancing tutorials for more information */
+    printf("Found intersection on geometry %d, primitive %d at tfar=%f\n", 
+           ray.geomID,
+           ray.primID,
+           ray.tfar);
+  }
+  else
+    printf("Did not find any intersection.\n");
+
+  ///*
+  // * The intersect context can be used to set intersection
+  // * filters or flags, and it also contains the instance ID stack
+  // * used in multi-level instancing.
+  // */
+  //struct RTCIntersectContext context;
+  //rtcInitIntersectContext(&context);
+
+  ///*
+  // * The ray hit structure holds both the ray and the hit.
+  // * The user must initialize it properly -- see API documentation
+  // * for rtcIntersect1() for details.
+  // */
+  //struct RTCRayHit rayhit;
+  //rayhit.ray.org_x = ox;
+  //rayhit.ray.org_y = oy;
+  //rayhit.ray.org_z = oz;
+  //rayhit.ray.dir_x = dx;
+  //rayhit.ray.dir_y = dy;
+  //rayhit.ray.dir_z = dz;
+  //rayhit.ray.tnear = 0;
+  //rayhit.ray.tfar = std::numeric_limits<float>::infinity();
+  //rayhit.ray.mask = -1;
+  //rayhit.ray.flags = 0;
+  //rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+  //rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
+
+  ///*
+  // * There are multiple variants of rtcIntersect. This one
+  // * intersects a single ray with the scene.
+  // */
+  //rtcIntersect1(scene, &context, &rayhit);
+
+  //printf("%f, %f, %f: ", ox, oy, oz);
+  //if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+  //{
+  //  /* Note how geomID and primID identify the geometry we just hit.
+  //   * We could use them here to interpolate geometry information,
+  //   * compute shading, etc.
+  //   * Since there is only a single triangle in this scene, we will
+  //   * get geomID=0 / primID=0 for all hits.
+  //   * There is also instID, used for instancing. See
+  //   * the instancing tutorials for more information */
+  //  printf("Found intersection on geometry %d, primitive %d at tfar=%f\n", 
+  //         rayhit.hit.geomID,
+  //         rayhit.hit.primID,
+  //         rayhit.ray.tfar);
+  //}
+  //else
+  //  printf("Did not find any intersection.\n");
+}
+
+void waitForKeyPressedUnderWindows()
+{
+#if defined(_WIN32)
+  HANDLE hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+  
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  if (!GetConsoleScreenBufferInfo(hStdOutput, &csbi)) {
+    printf("GetConsoleScreenBufferInfo failed: %d\n", GetLastError());
+    return;
+  }
+  
+  /* do not pause when running on a shell */
+  if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0)
+    return;
+  
+  /* only pause if running in separate console window. */
+  printf("\n\tPress any key to exit...\n");
+  int ch = getch();
+#endif
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -222,8 +257,8 @@ int main()
 
   /* Though not strictly necessary in this example, you should
    * always make sure to release resources allocated through Embree. */
-  rtcReleaseScene(scene);
-  rtcReleaseDevice(device);
+  rtcDeleteScene(scene);
+  rtcDeleteDevice(device);
   
   /* wait for user input under Windows when opened in separate window */
   waitForKeyPressedUnderWindows();
