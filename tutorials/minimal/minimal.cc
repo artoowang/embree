@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <limits>
+#include <vector>
 
 #if defined(_WIN32)
 #include <conio.h>
@@ -173,7 +174,9 @@ constexpr int kScreenWidth = 512;
 constexpr int kScreenHeight = 384;
 constexpr const char* kWindowName = "Minimal Test";
 
-void displayFunc() {}
+void GlfwErrorFunc(int error, const char* description) {
+  std::cerr << "GLFW error: " << description;
+}
 
 int main(int argc, char** argv) {
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
@@ -190,6 +193,7 @@ int main(int argc, char** argv) {
   /* This will not hit anything. */
   castRay(scene, 1, 1, -1, 0, 0, 1);
 
+  glfwSetErrorCallback(GlfwErrorFunc);
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -204,8 +208,24 @@ int main(int argc, char** argv) {
   std::cout << "GLFW framebuffer size: " << width << ", " << height << "\n";
   glViewport(0, 0, width, height);
 
+  std::vector<uint8_t> pixels(width * height * 4);
+  int frame = 0;
+
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
+
+    uint8_t c = static_cast<uint8_t>(++frame % 255);
+    for (int y = 0; y < height; ++y) {
+      for (int x = 0; x < width; ++x) {
+        pixels[4 * (y * width + x)] = c;
+        pixels[4 * (y * width + x) + 1] = 0;
+        pixels[4 * (y * width + x) + 2] = 0;
+        pixels[4 * (y * width + x) + 3] = 255;
+      }
+    }
+
+    glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
     glfwSwapBuffers(window);
   }
 
