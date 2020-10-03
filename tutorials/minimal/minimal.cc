@@ -3,43 +3,49 @@
 
 #include <embree2/rtcore.h>
 #include <embree2/rtcore_ray.h>
-#include <stdio.h>
 #include <math.h>
-#include <limits>
 #include <stdio.h>
+
+#include <limits>
 
 #if defined(_WIN32)
-#  include <conio.h>
-#  include <windows.h>
+#include <conio.h>
+#include <windows.h>
 #endif
 
-#include <xmmintrin.h>
+#include <GLUT/glut.h>
+#include <OpenGL/gl.h>
 #include <pmmintrin.h>
+#include <xmmintrin.h>
 
 /*
- * A minimal tutorial. 
+ * A minimal tutorial.
  *
  * It demonstrates how to intersect a ray with a single triangle. It is
  * meant to get you started as quickly as possible, and does not output
- * an image. 
+ * an image.
  *
  * For more complex examples, see the other tutorials.
  *
  * Compile this file using
- *   
+ *
  *   gcc -std=c99 \
  *       -I<PATH>/<TO>/<EMBREE>/include \
  *       -o minimal \
  *       minimal.c \
  *       -L<PATH>/<TO>/<EMBREE>/lib \
- *       -lembree3 
+ *       -lembree3
  *
  * You should be able to compile this using a C or C++ compiler.
  */
 
 // Copied from readme.pdf.
-struct Vertex { float x, y, z, a; };
-struct Triangle { int v0, v1, v2; };
+struct Vertex {
+  float x, y, z, a;
+};
+struct Triangle {
+  int v0, v1, v2;
+};
 
 /*
  * We will register this error handler with the device in initializeDevice(),
@@ -47,15 +53,14 @@ struct Triangle { int v0, v1, v2; };
  * This is extremely helpful for finding bugs in your code, prevents you
  * from having to add explicit error checking to each Embree API call.
  */
-void errorFunction(void* userPtr, enum RTCError error, const char* str)
-{
+void errorFunction(void* userPtr, enum RTCError error, const char* str) {
   printf("error %d: %s\n", error, str);
 }
 
 /*
- * Embree has a notion of devices, which are entities that can run 
+ * Embree has a notion of devices, which are entities that can run
  * raytracing kernels.
- * We initialize our device here, and then register the error handler so that 
+ * We initialize our device here, and then register the error handler so that
  * we don't miss any errors.
  *
  * rtcNewDevice() takes a configuration string as an argument. See the API docs
@@ -63,8 +68,7 @@ void errorFunction(void* userPtr, enum RTCError error, const char* str)
  *
  * Note that RTCDevice is reference-counted.
  */
-RTCDevice initializeDevice()
-{
+RTCDevice initializeDevice() {
   RTCDevice device = rtcNewDevice(NULL);
 
   if (!device)
@@ -75,17 +79,16 @@ RTCDevice initializeDevice()
 }
 
 /*
- * Create a scene, which is a collection of geometry objects. Scenes are 
- * what the intersect / occluded functions work on. You can think of a 
+ * Create a scene, which is a collection of geometry objects. Scenes are
+ * what the intersect / occluded functions work on. You can think of a
  * scene as an acceleration structure, e.g. a bounding-volume hierarchy.
  *
  * Scenes, like devices, are reference-counted.
  */
-RTCScene initializeScene(RTCDevice device)
-{
+RTCScene initializeScene(RTCDevice device) {
   RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
 
-  /* 
+  /*
    * Create a triangle mesh geometry, and initialize a single triangle.
    * You can look up geometry types in the API documentation to
    * find out which type expects which buffers.
@@ -97,14 +100,22 @@ RTCScene initializeScene(RTCDevice device)
    */
   unsigned int mesh = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, 1, 3);
 
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene, mesh, RTC_VERTEX_BUFFER);
-  vertices[0].x = 0.f; vertices[0].y = 0.f; vertices[0].z = 0.f;
-  vertices[1].x = 1.f; vertices[1].y = 0.f; vertices[1].z = 0.f;
-  vertices[2].x = 0.f; vertices[2].y = 1.f; vertices[2].z = 0.f;
+  Vertex* vertices = (Vertex*)rtcMapBuffer(scene, mesh, RTC_VERTEX_BUFFER);
+  vertices[0].x = 0.f;
+  vertices[0].y = 0.f;
+  vertices[0].z = 0.f;
+  vertices[1].x = 1.f;
+  vertices[1].y = 0.f;
+  vertices[1].z = 0.f;
+  vertices[2].x = 0.f;
+  vertices[2].y = 1.f;
+  vertices[2].z = 0.f;
   rtcUnmapBuffer(scene, mesh, RTC_VERTEX_BUFFER);
 
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene, mesh, RTC_INDEX_BUFFER);
-  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
+  Triangle* triangles = (Triangle*)rtcMapBuffer(scene, mesh, RTC_INDEX_BUFFER);
+  triangles[0].v0 = 0;
+  triangles[0].v1 = 1;
+  triangles[0].v2 = 2;
   rtcUnmapBuffer(scene, mesh, RTC_INDEX_BUFFER);
 
   rtcCommit(scene);
@@ -116,10 +127,8 @@ RTCScene initializeScene(RTCDevice device)
  * Cast a single ray with origin (ox, oy, oz) and direction
  * (dx, dy, dz).
  */
-void castRay(RTCScene scene, 
-             float ox, float oy, float oz,
-             float dx, float dy, float dz)
-{
+void castRay(RTCScene scene, float ox, float oy, float oz, float dx, float dy,
+             float dz) {
   RTCRay ray;
   ray.org[0] = ox;
   ray.org[1] = oy;
@@ -137,8 +146,7 @@ void castRay(RTCScene scene,
   rtcIntersect(scene, ray);
 
   printf("%f, %f, %f: ", ox, oy, oz);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-  {
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
     /* Note how geomID and primID identify the geometry we just hit.
      * We could use them here to interpolate geometry information,
      * compute shading, etc.
@@ -146,17 +154,13 @@ void castRay(RTCScene scene,
      * get geomID=0 / primID=0 for all hits.
      * There is also instID, used for instancing. See
      * the instancing tutorials for more information */
-    printf("Found intersection on geometry %d, primitive %d at tfar=%f\n", 
-           ray.geomID,
-           ray.primID,
-           ray.tfar);
-  }
-  else
+    printf("Found intersection on geometry %d, primitive %d at tfar=%f\n",
+           ray.geomID, ray.primID, ray.tfar);
+  } else
     printf("Did not find any intersection.\n");
 }
 
-void waitForKeyPressedUnderWindows()
-{
+void waitForKeyPressedUnderWindows() {
 #if defined(_WIN32)
   HANDLE hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -167,8 +171,7 @@ void waitForKeyPressedUnderWindows()
   }
 
   /* do not pause when running on a shell */
-  if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0)
-    return;
+  if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0) return;
 
   /* only pause if running in separate console window. */
   printf("\n\tPress any key to exit...\n");
@@ -176,11 +179,9 @@ void waitForKeyPressedUnderWindows()
 #endif
 }
 
-
 /* -------------------------------------------------------------------------- */
 
-int main()
-{
+int main() {
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
