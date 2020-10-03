@@ -5,7 +5,9 @@
 #include <embree2/rtcore_ray.h>
 #include <math.h>
 #include <stdio.h>
+#include <unistd.h>
 
+#include <iostream>
 #include <limits>
 
 #if defined(_WIN32)
@@ -15,7 +17,7 @@
 
 // GL related.
 #define GL_SILENCE_DEPRECATION
-#include <GLUT/glut.h>
+#include <GLFW/glfw3.h>
 #include <OpenGL/gl.h>
 
 // See Embree readme.pdf.
@@ -164,32 +166,14 @@ void castRay(RTCScene scene, float ox, float oy, float oz, float dx, float dy,
     printf("Did not find any intersection.\n");
 }
 
-void waitForKeyPressedUnderWindows() {
-#if defined(_WIN32)
-  HANDLE hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-
-  CONSOLE_SCREEN_BUFFER_INFO csbi;
-  if (!GetConsoleScreenBufferInfo(hStdOutput, &csbi)) {
-    printf("GetConsoleScreenBufferInfo failed: %d\n", GetLastError());
-    return;
-  }
-
-  /* do not pause when running on a shell */
-  if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0) return;
-
-  /* only pause if running in separate console window. */
-  printf("\n\tPress any key to exit...\n");
-  int ch = getch();
-#endif
-}
-
 /* -------------------------------------------------------------------------- */
 
+// On OSX, the actual framebuffer seems to be double this size.
 constexpr int kScreenWidth = 512;
-constexpr int kScreenHeight = 512;
+constexpr int kScreenHeight = 384;
 constexpr const char* kWindowName = "Minimal Test";
 
-void displayFunc() { glutSwapBuffers(); }
+void displayFunc() {}
 
 int main(int argc, char** argv) {
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
@@ -206,21 +190,32 @@ int main(int argc, char** argv) {
   /* This will not hit anything. */
   castRay(scene, 1, 1, -1, 0, 0, 1);
 
-  glutInit(&argc, argv);
-  glutInitWindowSize((GLsizei)kScreenWidth, (GLsizei)kScreenHeight);
-  glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-  glutInitWindowPosition(0, 0);
-  int windowID = glutCreateWindow(kWindowName);
-  glutDisplayFunc(displayFunc);
-  glutMainLoop();
+  glfwInit();
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  GLFWwindow* window = glfwCreateWindow(kScreenWidth, kScreenHeight,
+                                        kWindowName, nullptr, nullptr);
+  glfwMakeContextCurrent(window);
+  glfwSwapInterval(1);
+
+  int width = 0;
+  int height = 0;
+  glfwGetFramebufferSize(window, &width, &height);
+  std::cout << "GLFW framebuffer size: " << width << ", " << height << "\n";
+  glViewport(0, 0, width, height);
+
+  while (!glfwWindowShouldClose(window)) {
+    glfwPollEvents();
+    glfwSwapBuffers(window);
+  }
 
   /* Though not strictly necessary in this example, you should
    * always make sure to release resources allocated through Embree. */
   rtcDeleteScene(scene);
   rtcDeleteDevice(device);
 
-  /* wait for user input under Windows when opened in separate window */
-  waitForKeyPressedUnderWindows();
+  glfwDestroyWindow(window);
+  glfwTerminate();
 
   return 0;
 }

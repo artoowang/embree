@@ -5,3 +5,6 @@ x64
 *.ncb
 .*sw?
 .DS_Store
+
+build/
+tutorials/minimal/minimal
