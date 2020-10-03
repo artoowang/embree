@@ -13,8 +13,12 @@
 #include <windows.h>
 #endif
 
+// GL related.
+#define GL_SILENCE_DEPRECATION
 #include <GLUT/glut.h>
 #include <OpenGL/gl.h>
+
+// See Embree readme.pdf.
 #include <pmmintrin.h>
 #include <xmmintrin.h>
 
@@ -181,7 +185,13 @@ void waitForKeyPressedUnderWindows() {
 
 /* -------------------------------------------------------------------------- */
 
-int main() {
+constexpr int kScreenWidth = 512;
+constexpr int kScreenHeight = 512;
+constexpr const char* kWindowName = "Minimal Test";
+
+void displayFunc() { glutSwapBuffers(); }
+
+int main(int argc, char** argv) {
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
@@ -195,6 +205,14 @@ int main() {
 
   /* This will not hit anything. */
   castRay(scene, 1, 1, -1, 0, 0, 1);
+
+  glutInit(&argc, argv);
+  glutInitWindowSize((GLsizei)kScreenWidth, (GLsizei)kScreenHeight);
+  glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+  glutInitWindowPosition(0, 0);
+  int windowID = glutCreateWindow(kWindowName);
+  glutDisplayFunc(displayFunc);
+  glutMainLoop();
 
   /* Though not strictly necessary in this example, you should
    * always make sure to release resources allocated through Embree. */
